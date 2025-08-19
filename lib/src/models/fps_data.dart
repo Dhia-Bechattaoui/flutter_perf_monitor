@@ -1,5 +1,22 @@
 /// Represents FPS (Frames Per Second) data for performance monitoring.
 class FPSData {
+  /// Creates a new FPSData instance.
+  ///
+  /// [currentFPS] - Current FPS value
+  /// [averageFPS] - Average FPS over the monitoring period
+  /// [minFPS] - Minimum FPS recorded
+  /// [maxFPS] - Maximum FPS recorded
+  /// [timestamp] - Timestamp when FPS was measured
+  /// [frameCount] - Frame count since last measurement
+  const FPSData({
+    required this.currentFPS,
+    required this.averageFPS,
+    required this.minFPS,
+    required this.maxFPS,
+    required this.timestamp,
+    required this.frameCount,
+  });
+
   /// Current FPS value
   final double currentFPS;
 
@@ -17,15 +34,6 @@ class FPSData {
 
   /// Frame count since last measurement
   final int frameCount;
-
-  const FPSData({
-    required this.currentFPS,
-    required this.averageFPS,
-    required this.minFPS,
-    required this.maxFPS,
-    required this.timestamp,
-    required this.frameCount,
-  });
 
   /// Creates a copy of this object with the given fields replaced by new values.
   FPSData copyWith({

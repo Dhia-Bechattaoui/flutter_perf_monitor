@@ -1,5 +1,20 @@
 /// Represents overall performance metrics for a Flutter application.
 class PerformanceMetrics {
+  /// Creates a new PerformanceMetrics instance.
+  ///
+  /// [fps] - Current FPS value
+  /// [memoryUsage] - Current memory usage in bytes
+  /// [timestamp] - Timestamp when metrics were collected
+  /// [frameTime] - Frame rendering time in milliseconds
+  /// [cpuUsage] - CPU usage percentage
+  const PerformanceMetrics({
+    required this.fps,
+    required this.memoryUsage,
+    required this.timestamp,
+    required this.frameTime,
+    required this.cpuUsage,
+  });
+
   /// Current FPS value
   final double fps;
 
@@ -14,14 +29,6 @@ class PerformanceMetrics {
 
   /// CPU usage percentage
   final double cpuUsage;
-
-  const PerformanceMetrics({
-    required this.fps,
-    required this.memoryUsage,
-    required this.timestamp,
-    required this.frameTime,
-    required this.cpuUsage,
-  });
 
   /// Creates a copy of this object with the given fields replaced by new values.
   PerformanceMetrics copyWith({

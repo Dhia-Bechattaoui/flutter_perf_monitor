@@ -1,5 +1,22 @@
 /// Represents memory usage data for performance monitoring.
 class MemoryData {
+  /// Creates a new MemoryData instance.
+  ///
+  /// [currentUsage] - Current memory usage in bytes
+  /// [peakUsage] - Peak memory usage in bytes
+  /// [availableMemory] - Available memory in bytes
+  /// [totalMemory] - Total memory in bytes
+  /// [usagePercentage] - Memory usage percentage
+  /// [timestamp] - Timestamp when memory was measured
+  const MemoryData({
+    required this.currentUsage,
+    required this.peakUsage,
+    required this.availableMemory,
+    required this.totalMemory,
+    required this.usagePercentage,
+    required this.timestamp,
+  });
+
   /// Current memory usage in bytes
   final int currentUsage;
 
@@ -17,15 +34,6 @@ class MemoryData {
 
   /// Timestamp when memory was measured
   final DateTime timestamp;
-
-  const MemoryData({
-    required this.currentUsage,
-    required this.peakUsage,
-    required this.availableMemory,
-    required this.totalMemory,
-    required this.usagePercentage,
-    required this.timestamp,
-  });
 
   /// Creates a copy of this object with the given fields replaced by new values.
   MemoryData copyWith({

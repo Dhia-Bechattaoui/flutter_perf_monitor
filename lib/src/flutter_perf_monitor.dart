@@ -11,6 +11,10 @@ import 'models/performance_metrics.dart';
 /// FPS tracking, memory usage monitoring, and performance metrics collection.
 class FlutterPerfMonitor {
   static FlutterPerfMonitor? _instance;
+
+  /// Gets the singleton instance of FlutterPerfMonitor.
+  ///
+  /// This getter ensures only one instance exists throughout the app lifecycle.
   static FlutterPerfMonitor get instance =>
       _instance ??= FlutterPerfMonitor._();
 

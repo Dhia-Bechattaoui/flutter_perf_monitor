@@ -33,6 +33,17 @@ class PerfMonitorWidget extends StatefulWidget {
   /// The padding of the monitor
   final EdgeInsets padding;
 
+  /// Creates a new PerfMonitorWidget instance.
+  ///
+  /// [key] - The widget key
+  /// [alignment] - The position of the monitor widget
+  /// [showFPS] - Whether to show the FPS display
+  /// [showMemory] - Whether to show the memory usage display
+  /// [showCPU] - Whether to show the CPU usage display
+  /// [backgroundColor] - The background color of the monitor
+  /// [textColor] - The text color of the monitor
+  /// [borderRadius] - The border radius of the monitor
+  /// [padding] - The padding of the monitor
   const PerfMonitorWidget({
     super.key,
     this.alignment = Alignment.topRight,
