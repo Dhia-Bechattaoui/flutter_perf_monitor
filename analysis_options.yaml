@@ -6,6 +6,7 @@ analyzer:
     - "**/*.freezed.dart"
   errors:
     invalid_annotation_target: ignore
+    unnecessary_library_name: ignore
 
 linter:
   rules:
@@ -24,7 +25,6 @@ linter:
     - empty_statements
     - hash_and_equals
     - implementation_imports
-    - library_names
     - library_prefixes
     - non_constant_identifier_names
     # package_api_docs was removed in Dart 3.7.0

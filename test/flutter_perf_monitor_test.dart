@@ -19,10 +19,7 @@ void main() {
     });
 
     test('should not allow monitoring before initialization', () {
-      expect(
-        () => FlutterPerfMonitor.startMonitoring(),
-        throwsStateError,
-      );
+      expect(() => FlutterPerfMonitor.startMonitoring(), throwsStateError);
     });
 
     test('should start and stop monitoring after initialization', () async {

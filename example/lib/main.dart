@@ -48,13 +48,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    _animation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     _animationController.repeat(reverse: true);
   }
@@ -142,7 +138,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         : const Color(0xFF4CAF50),
                     foregroundColor: const Color(0xFFFFFFFF),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 15),
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
                   ),
                   child: Text(
                     _isMonitoring ? 'Stop Monitoring' : 'Start Monitoring',
@@ -157,9 +155,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                       ? 'Performance monitoring is active. Check the overlay widget!'
                       : 'Click the button above to start performance monitoring.',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
                 ),
               ],
             ),

@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+import 'exceptions/perf_monitor_exceptions.dart';
 import 'models/fps_data.dart';
 import 'models/memory_data.dart';
 import 'models/performance_metrics.dart';
+import 'platform/perf_monitor_factory.dart';
+import 'utils/logger.dart';
 
 /// Main class for Flutter performance monitoring.
 ///
@@ -35,7 +38,6 @@ class FlutterPerfMonitor {
   double _maxFPS = 0.0;
 
   int _peakMemoryUsage = 0;
-  final int _totalMemory = 0;
 
   final StreamController<PerformanceMetrics> _metricsController =
       StreamController<PerformanceMetrics>.broadcast();
@@ -60,17 +62,33 @@ class FlutterPerfMonitor {
   /// This method should be called before starting monitoring.
   /// It sets up the necessary callbacks and initializes the monitoring system.
   static Future<void> initialize() async {
-    if (instance._isInitialized) return;
+    try {
+      if (instance._isInitialized) {
+        PerfMonitorLogger.warning('FlutterPerfMonitor is already initialized');
+        return;
+      }
 
-    instance._isInitialized = true;
+      instance._isInitialized = true;
 
-    // Set up frame callback for FPS monitoring
-    SchedulerBinding.instance.addPersistentFrameCallback((Duration timeStamp) {
-      instance._onFrame(timeStamp);
-    });
+      // Set up frame callback for FPS monitoring
+      SchedulerBinding.instance.addPersistentFrameCallback((
+        Duration timeStamp,
+      ) {
+        instance._onFrame(timeStamp);
+      });
 
-    if (kDebugMode) {
-      print('FlutterPerfMonitor initialized successfully');
+      // Initialize platform metrics
+      instance._updatePlatformMetrics();
+
+      PerfMonitorLogger.info('FlutterPerfMonitor initialized successfully');
+    } catch (e, stackTrace) {
+      PerfMonitorLogger.error(
+        'Failed to initialize FlutterPerfMonitor',
+        e,
+        stackTrace,
+      );
+      instance._isInitialized = false;
+      rethrow;
     }
   }
 
@@ -78,22 +96,41 @@ class FlutterPerfMonitor {
   ///
   /// Begins collecting performance metrics at regular intervals.
   /// The monitoring frequency can be adjusted by changing the [interval] parameter.
-  static void startMonitoring(
-      {Duration interval = const Duration(milliseconds: 100)}) {
-    if (!instance._isInitialized) {
-      throw StateError(
-          'FlutterPerfMonitor must be initialized before starting monitoring');
-    }
+  static void startMonitoring({
+    Duration interval = const Duration(milliseconds: 100),
+  }) {
+    try {
+      if (!instance._isInitialized) {
+        throw const PerfMonitorNotInitializedException();
+      }
 
-    if (instance._isMonitoring) return;
+      if (instance._isMonitoring) {
+        PerfMonitorLogger.warning('Performance monitoring is already running');
+        return;
+      }
 
-    instance._isMonitoring = true;
-    instance._monitoringTimer = Timer.periodic(interval, (timer) {
-      instance._collectMetrics();
-    });
+      if (interval.inMilliseconds < 16) {
+        throw const InvalidConfigurationException(
+          'Monitoring interval cannot be less than 16ms (60 FPS)',
+          code: 'INVALID_INTERVAL',
+        );
+      }
 
-    if (kDebugMode) {
-      print('Performance monitoring started');
+      instance._isMonitoring = true;
+      instance._monitoringTimer = Timer.periodic(interval, (timer) {
+        try {
+          instance._collectMetrics();
+        } catch (e, stackTrace) {
+          PerfMonitorLogger.error('Error collecting metrics', e, stackTrace);
+        }
+      });
+
+      PerfMonitorLogger.info(
+        'Performance monitoring started with interval: ${interval.inMilliseconds}ms',
+      );
+    } catch (e) {
+      PerfMonitorLogger.error('Failed to start performance monitoring', e);
+      rethrow;
     }
   }
 
@@ -172,6 +209,9 @@ class FlutterPerfMonitor {
   }
 
   void _collectMetrics() {
+    // Update platform metrics before creating data objects
+    _updatePlatformMetrics();
+
     final memoryData = _createMemoryData();
     final fpsData = _createFPSData();
     final performanceMetrics = _createPerformanceMetrics();
@@ -203,8 +243,9 @@ class FlutterPerfMonitor {
       peakUsage: _peakMemoryUsage,
       availableMemory: _getAvailableMemory(),
       totalMemory: _totalMemory,
-      usagePercentage:
-          _totalMemory > 0 ? (currentUsage / _totalMemory) * 100 : 0.0,
+      usagePercentage: _totalMemory > 0
+          ? (currentUsage / _totalMemory) * 100
+          : 0.0,
       timestamp: DateTime.now(),
     );
   }
@@ -217,31 +258,43 @@ class FlutterPerfMonitor {
       frameTime: _lastFrameTime != null
           ? DateTime.now().difference(_lastFrameTime!).inMicroseconds / 1000.0
           : 0.0,
-      cpuUsage: _estimateCPUUsage(),
+      cpuUsage: _currentCPUUsage,
     );
   }
 
   int _getCurrentMemoryUsage() {
-    // This is a simplified implementation
-    // In a real implementation, you would use platform-specific APIs
-    return _estimateMemoryUsage();
+    // Use platform-specific implementation for real memory monitoring
+    return _currentMemoryUsage;
   }
 
   int _getAvailableMemory() {
-    // This is a simplified implementation
-    // In a real implementation, you would use platform-specific APIs
-    return _totalMemory - _getCurrentMemoryUsage();
+    return _availableMemory;
   }
 
-  int _estimateMemoryUsage() {
-    // Simplified memory estimation
-    // In production, use proper platform channels or native APIs
-    return DateTime.now().millisecondsSinceEpoch % 1000000; // Placeholder
-  }
+  int _currentMemoryUsage = 0;
+  int _availableMemory = 0;
+  int _totalMemory = 0;
+  double _currentCPUUsage = 0.0;
 
-  double _estimateCPUUsage() {
-    // Simplified CPU usage estimation
-    // In production, use proper platform channels or native APIs
-    return (_currentFPS / 60.0) * 100; // Placeholder based on FPS
+  void _updatePlatformMetrics() async {
+    try {
+      final perfMonitor = PerfMonitorFactory.instance;
+      _currentMemoryUsage = await perfMonitor.getMemoryUsage();
+      _totalMemory = await perfMonitor.getTotalMemory();
+      _availableMemory = await perfMonitor.getAvailableMemory();
+      _currentCPUUsage = await perfMonitor.getCPUUsage();
+
+      PerfMonitorLogger.logMetrics(
+        fps: _currentFPS,
+        memoryUsage: _currentMemoryUsage,
+        cpuUsage: _currentCPUUsage,
+        frameTime: _lastFrameTime != null
+            ? DateTime.now().difference(_lastFrameTime!).inMicroseconds / 1000.0
+            : 0.0,
+      );
+    } catch (e, stackTrace) {
+      PerfMonitorLogger.error('Error updating platform metrics', e, stackTrace);
+      // Fallback to previous values if platform calls fail
+    }
   }
 }
