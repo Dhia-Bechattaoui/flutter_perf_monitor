@@ -25,7 +25,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_perf_monitor: ^0.0.1
+  flutter_perf_monitor: ^0.1.0
 ```
 
 ### Usage
