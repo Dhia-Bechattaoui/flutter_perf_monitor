@@ -6,6 +6,9 @@ repository: https://github.com/Dhia-Bechattaoui/flutter_perf_monitor
 issue_tracker: https://github.com/Dhia-Bechattaoui/flutter_perf_monitor/issues
 documentation: https://github.com/Dhia-Bechattaoui/flutter_perf_monitor#readme
 
+funding:
+  - https://github.com/sponsors/Dhia-Bechattaoui
+
 environment:
   sdk: '>=3.8.0 <4.0.0'
   flutter: '>=3.32.0'
