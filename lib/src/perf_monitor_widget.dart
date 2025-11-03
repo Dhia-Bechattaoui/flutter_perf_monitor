@@ -143,10 +143,14 @@ class _PerfMonitorWidgetState extends State<PerfMonitorWidget> {
           _buildMetricChip('FPS', _currentFPS!.currentFPS.toStringAsFixed(1)),
         if (widget.showMemory && _currentMemory != null)
           _buildMetricChip(
-              'MEM', '${_currentMemory!.currentUsageMB.toStringAsFixed(1)}MB'),
+            'MEM',
+            '${_currentMemory!.currentUsageMB.toStringAsFixed(1)}MB',
+          ),
         if (widget.showCPU && _currentMetrics != null)
           _buildMetricChip(
-              'CPU', '${_currentMetrics!.cpuUsage.toStringAsFixed(1)}%'),
+            'CPU',
+            '${_currentMetrics!.cpuUsage.toStringAsFixed(1)}%',
+          ),
       ],
     );
   }
@@ -168,11 +172,7 @@ class _PerfMonitorWidgetState extends State<PerfMonitorWidget> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.speed,
-          color: widget.textColor,
-          size: 16.0,
-        ),
+        Icon(Icons.speed, color: widget.textColor, size: 16.0),
         const SizedBox(width: 4.0),
         Text(
           'Performance Monitor',
@@ -214,47 +214,60 @@ class _PerfMonitorWidgetState extends State<PerfMonitorWidget> {
   Widget _buildFPSDetails() {
     if (_currentFPS == null) return const SizedBox.shrink();
 
-    return _buildDetailSection(
-      'FPS',
-      [
-        _buildDetailRow('Current', _currentFPS!.currentFPS.toStringAsFixed(1)),
-        _buildDetailRow('Average', _currentFPS!.averageFPS.toStringAsFixed(1)),
-        _buildDetailRow('Min', _currentFPS!.minFPS.toStringAsFixed(1)),
-        _buildDetailRow('Max', _currentFPS!.maxFPS.toStringAsFixed(1)),
-      ],
-    );
+    return _buildDetailSection('FPS', [
+      _buildDetailRow('Current', _currentFPS!.currentFPS.toStringAsFixed(1)),
+      _buildDetailRow('Average', _currentFPS!.averageFPS.toStringAsFixed(1)),
+      _buildDetailRow('Min', _currentFPS!.minFPS.toStringAsFixed(1)),
+      _buildDetailRow('Max', _currentFPS!.maxFPS.toStringAsFixed(1)),
+    ]);
   }
 
   Widget _buildMemoryDetails() {
     if (_currentMemory == null) return const SizedBox.shrink();
 
-    return _buildDetailSection(
-      'Memory',
-      [
-        _buildDetailRow('Current',
-            '${_currentMemory!.currentUsageMB.toStringAsFixed(1)}MB'),
+    final rows = <Widget>[
+      _buildDetailRow(
+        'Current',
+        '${_currentMemory!.currentUsageMB.toStringAsFixed(1)}MB',
+      ),
+      _buildDetailRow(
+        'Peak',
+        '${_currentMemory!.peakUsageMB.toStringAsFixed(1)}MB',
+      ),
+    ];
+
+    // Only show Available and Usage if we have total memory data
+    if (_currentMemory!.totalMemory > 0) {
+      rows.add(
         _buildDetailRow(
-            'Peak', '${_currentMemory!.peakUsageMB.toStringAsFixed(1)}MB'),
-        _buildDetailRow('Available',
-            '${_currentMemory!.availableMemoryMB.toStringAsFixed(1)}MB'),
+          'Available',
+          '${_currentMemory!.availableMemoryMB.toStringAsFixed(1)}MB',
+        ),
+      );
+      rows.add(
         _buildDetailRow(
-            'Usage', '${_currentMemory!.usagePercentage.toStringAsFixed(1)}%'),
-      ],
-    );
+          'Usage',
+          '${_currentMemory!.usagePercentage.toStringAsFixed(1)}%',
+        ),
+      );
+    }
+
+    return _buildDetailSection('Memory', rows);
   }
 
   Widget _buildCPUDetails() {
     if (_currentMetrics == null) return const SizedBox.shrink();
 
-    return _buildDetailSection(
-      'CPU',
-      [
-        _buildDetailRow(
-            'Usage', '${_currentMetrics!.cpuUsage.toStringAsFixed(1)}%'),
-        _buildDetailRow(
-            'Frame Time', '${_currentMetrics!.frameTime.toStringAsFixed(2)}ms'),
-      ],
-    );
+    return _buildDetailSection('CPU', [
+      _buildDetailRow(
+        'Usage',
+        '${_currentMetrics!.cpuUsage.toStringAsFixed(1)}%',
+      ),
+      _buildDetailRow(
+        'Frame Time',
+        '${_currentMetrics!.frameTime.toStringAsFixed(2)}ms',
+      ),
+    ]);
   }
 
   Widget _buildDetailSection(String title, List<Widget> children) {

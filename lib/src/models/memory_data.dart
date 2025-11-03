@@ -90,7 +90,13 @@ class MemoryData {
 
   @override
   int get hashCode {
-    return Object.hash(currentUsage, peakUsage, availableMemory, totalMemory,
-        usagePercentage, timestamp);
+    return Object.hash(
+      currentUsage,
+      peakUsage,
+      availableMemory,
+      totalMemory,
+      usagePercentage,
+      timestamp,
+    );
   }
 }

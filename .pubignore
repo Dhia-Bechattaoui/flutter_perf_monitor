@@ -1,0 +1,19 @@
+# Files to exclude from pub.dev publishing that are tracked in Git
+# but should not be published to pub.dev
+
+# Generated files
+pubspec.lock
+**/pubspec.lock
+
+# Generated plugin registrant
+**/GeneratedPluginRegistrant.*
+
+# Example local configuration
+**/local.properties
+
+# Flutter ephemeral files
+**/Flutter/ephemeral/
+
+# Profile-specific manifests
+**/src/profile/
+

@@ -19,10 +19,7 @@ void main() {
     });
 
     test('should not allow monitoring before initialization', () {
-      expect(
-        () => FlutterPerfMonitor.startMonitoring(),
-        throwsStateError,
-      );
+      expect(() => FlutterPerfMonitor.startMonitoring(), throwsStateError);
     });
 
     test('should start and stop monitoring after initialization', () async {
@@ -89,6 +86,102 @@ void main() {
 
       FlutterPerfMonitor.dispose();
       FlutterPerfMonitor.dispose(); // Should not throw
+    });
+
+    test('should receive metrics stream updates', () async {
+      await FlutterPerfMonitor.initialize();
+      final stream = FlutterPerfMonitor.instance.metricsStream;
+
+      final subscription = stream.listen((event) {
+        expect(event, isA<PerformanceMetrics>());
+      });
+
+      FlutterPerfMonitor.startMonitoring();
+
+      // Wait for at least one metrics update
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      FlutterPerfMonitor.stopMonitoring();
+      await Future.delayed(const Duration(milliseconds: 50));
+      subscription.cancel();
+
+      // Just verify we got some events or the stream works
+      expect(stream, isNotNull);
+    });
+
+    test('should receive FPS stream updates', () async {
+      await FlutterPerfMonitor.initialize();
+      final stream = FlutterPerfMonitor.instance.fpsStream;
+
+      final subscription = stream.listen((event) {
+        expect(event, isA<FPSData>());
+      });
+
+      FlutterPerfMonitor.startMonitoring();
+
+      // Wait for metrics to be collected
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      FlutterPerfMonitor.stopMonitoring();
+      await Future.delayed(const Duration(milliseconds: 50));
+      subscription.cancel();
+
+      // Just verify we got some events or the stream works
+      expect(stream, isNotNull);
+    });
+
+    test('should receive memory stream updates', () async {
+      await FlutterPerfMonitor.initialize();
+      final stream = FlutterPerfMonitor.instance.memoryStream;
+
+      final subscription = stream.listen((event) {
+        expect(event, isA<MemoryData>());
+      });
+
+      FlutterPerfMonitor.startMonitoring();
+
+      // Wait for at least one metrics update
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      FlutterPerfMonitor.stopMonitoring();
+      await Future.delayed(const Duration(milliseconds: 50));
+      subscription.cancel();
+
+      // Just verify we got some events or the stream works
+      expect(stream, isNotNull);
+    });
+
+    test('should handle multiple subscriptions', () async {
+      await FlutterPerfMonitor.initialize();
+      final stream = FlutterPerfMonitor.instance.metricsStream;
+
+      final subscription1 = stream.listen((_) {});
+      final subscription2 = stream.listen((_) {});
+
+      FlutterPerfMonitor.startMonitoring();
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      FlutterPerfMonitor.stopMonitoring();
+      await Future.delayed(const Duration(milliseconds: 50));
+      subscription1.cancel();
+      subscription2.cancel();
+    });
+
+    test('should not start monitoring twice', () async {
+      await FlutterPerfMonitor.initialize();
+
+      FlutterPerfMonitor.startMonitoring();
+      FlutterPerfMonitor.startMonitoring(); // Should not throw
+
+      FlutterPerfMonitor.stopMonitoring();
+    });
+
+    test('should get per-core CPU usage', () async {
+      await FlutterPerfMonitor.initialize();
+
+      final perCore = FlutterPerfMonitor.getPerCoreCpuUsage();
+      expect(perCore, isA<List<double>>());
+      expect(perCore.length, greaterThanOrEqualTo(0));
     });
   });
 

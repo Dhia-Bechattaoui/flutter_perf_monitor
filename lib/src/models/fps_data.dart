@@ -76,6 +76,12 @@ class FPSData {
   @override
   int get hashCode {
     return Object.hash(
-        currentFPS, averageFPS, minFPS, maxFPS, timestamp, frameCount);
+      currentFPS,
+      averageFPS,
+      minFPS,
+      maxFPS,
+      timestamp,
+      frameCount,
+    );
   }
 }

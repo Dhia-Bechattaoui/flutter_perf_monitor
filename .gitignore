@@ -70,6 +70,7 @@ app.*.map.json
 **/ios/Flutter/flutter_export_environment.sh
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Flutter/ephemeral/
 
 # Coverage
 coverage/
@@ -81,6 +82,35 @@ coverage/
 # Generated files
 *.g.dart
 *.freezed.dart
+pubspec.lock
+**/.metadata
+
+# Gradle
+**/.gradle/
+**/gradlew
+**/gradlew.bat
+**/gradle-wrapper.jar
+**/gradle-wrapper.properties
+
+# Android build outputs
+**/android/app/src/debug/
+**/android/app/src/profile/
+**/android/app/src/release/
+**/android/app/build/
+**/android/build/
+**/android/.gradle/
+**/android/local.properties
+
+# iOS build outputs
+**/ios/Podfile
+**/ios/Podfile.lock
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/flutter_assets/
+**/ios/DerivedData/
+**/ios/.generated/
 
 # Environment files
 .env

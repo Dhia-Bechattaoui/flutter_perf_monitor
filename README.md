@@ -15,6 +15,7 @@ Real-time performance monitoring with FPS tracking and memory usage for Flutter 
 - 🔄 **Live updates** - Real-time performance data updates
 - 📱 **Cross-platform** - Works on iOS, Android, Web, and Desktop
 - ⚡ **Lightweight** - Minimal performance impact on your app
+- 🚀 **Native implementations** - Real CPU and memory metrics on Android/iOS
 
 ## Getting Started
 
@@ -74,6 +75,7 @@ The main class for performance monitoring.
 - `stopMonitoring()` - Stop performance monitoring
 - `getFPS()` - Get current FPS value
 - `getMemoryUsage()` - Get current memory usage
+- `getPerCoreCpuUsage()` - Get per-core CPU usage percentages
 
 ### PerfMonitorWidget
 
@@ -82,6 +84,28 @@ A widget that displays performance metrics.
 ## Example
 
 See the [example](example/) directory for a complete working example.
+
+## Native Implementations
+
+This package includes native implementations for Android and iOS to provide accurate system-level metrics:
+
+### Android
+- **Total & Available Memory**: Via `ActivityManager.MemoryInfo`
+- **Per-Core CPU Usage**: Via `/proc/stat`
+- **Total CPU Usage**: Average of all cores
+
+### iOS
+- **Total & Available Memory**: Via `ProcessInfo` and `mach_task_basic_info`
+- **Per-Core CPU Usage**: Via `task_threads`
+- **Total CPU Usage**: Sum of all thread usage
+
+### Fallback Behavior
+
+On platforms without native support (Web, Desktop), the package falls back to:
+- **Memory**: Process-level memory via `ProcessInfo.currentRss`
+- **CPU**: FPS-based estimation
+
+For detailed implementation information, see [SETUP.md](SETUP.md).
 
 ## Contributing
 

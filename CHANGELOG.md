@@ -7,12 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial project setup
-- Basic project structure
-- Performance monitoring foundation
+## [0.1.0] - 2024-11-03
 
-## [0.0.1] - 2024-01-XX
+### Added
+- **Native implementations for Android and iOS**
+  - Real system-level memory metrics (total, available, used) via platform channels
+  - Accurate CPU usage monitoring with per-core support on Android and iOS
+  - Android: CPU metrics via `/proc/stat` with graceful fallback for restricted devices
+  - iOS: CPU metrics via `task_threads` and memory via `mach_task_basic_info`
+- **Enhanced platform channel integration**
+  - `getMemoryInfo` method returning comprehensive memory statistics
+  - `getCpuUsage` method returning total and per-core CPU percentages
+  - Fallback mechanisms for platforms without native support
+- **Documentation improvements**
+  - Added `SETUP.md` with detailed native implementation documentation
+  - Updated `README.md` with native capabilities and fallback behavior
+  - Documented platform-specific APIs and limitations
+- **Build system enhancements**
+  - Java/Kotlin 17 toolchain configuration for Android
+  - Modern Gradle configuration with Kotlin DSL
+  - Proper `.gitignore` configuration for generated files
+  - iOS project structure regeneration for example app
+
+### Changed
+- **Memory monitoring accuracy**
+  - Now shows real system total/available memory on Android/iOS
+  - Conditionally displays "Available" and "Usage" only when native data available
+  - Removed "N/A" placeholders for better UX
+- **CPU monitoring accuracy**
+  - Real system CPU usage on Android and iOS (not FPS-based)
+  - Per-core CPU usage tracking on supported platforms
+  - Improved FPS-based fallback for non-native platforms
+- **Platform channel communication**
+  - Made `_collectMetrics` async for native metric updates
+  - Added error handling with debug logging
+  - Graceful degradation when native calls fail
+
+### Fixed
+- Android build errors with JVM compatibility (Java 17 configuration)
+- Permission denied errors on Android 8+ devices accessing `/proc/stat`
+- iOS missing `Runner.xcodeproj` causing build failures
+- CPU usage showing 0.0% on first frame calculation
+- Example app test failures with boilerplate counter test
+
+### Technical Details
+- **Android Implementation**: `FlutterPerfMonitorPlugin.kt` (156 lines)
+  - Uses `ActivityManager.MemoryInfo` for memory metrics
+  - Reads `/proc/stat` with permission handling
+  - Fallback to memory-pressure-based CPU estimation
+- **iOS Implementation**: `FlutterPerfMonitorPlugin.swift` (127 lines)
+  - Uses `ProcessInfo.physicalMemory` and `mach_task_basic_info`
+  - Thread-based CPU monitoring via `task_threads`
+  - Proper memory management with `vm_deallocate`
+- **Platform Channel**: `flutter_perf_monitor` channel with two methods
+  - All native calls wrapped in try-catch with fallbacks
+  - Non-blocking async updates every 100ms
+
+## [0.0.1] - 2024-01-01
 
 ### Added
 - Initial release
@@ -41,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **0.1.0** - Added native Android/iOS implementations for real CPU and memory metrics
 - **0.0.1** - Initial release with basic project structure and performance monitoring foundation
 
 ## Contributing

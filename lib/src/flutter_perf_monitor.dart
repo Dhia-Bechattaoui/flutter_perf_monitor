@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'models/fps_data.dart';
 import 'models/memory_data.dart';
 import 'models/performance_metrics.dart';
@@ -35,7 +37,11 @@ class FlutterPerfMonitor {
   double _maxFPS = 0.0;
 
   int _peakMemoryUsage = 0;
-  final int _totalMemory = 0;
+  int _totalMemory = 0;
+  int _availableMemory = 0;
+  double _currentCpuUsage = 0.0;
+  List<double> _perCoreCpuUsage = [];
+  static const MethodChannel _channel = MethodChannel('flutter_perf_monitor');
 
   final StreamController<PerformanceMetrics> _metricsController =
       StreamController<PerformanceMetrics>.broadcast();
@@ -78,18 +84,20 @@ class FlutterPerfMonitor {
   ///
   /// Begins collecting performance metrics at regular intervals.
   /// The monitoring frequency can be adjusted by changing the [interval] parameter.
-  static void startMonitoring(
-      {Duration interval = const Duration(milliseconds: 100)}) {
+  static void startMonitoring({
+    Duration interval = const Duration(milliseconds: 100),
+  }) {
     if (!instance._isInitialized) {
       throw StateError(
-          'FlutterPerfMonitor must be initialized before starting monitoring');
+        'FlutterPerfMonitor must be initialized before starting monitoring',
+      );
     }
 
     if (instance._isMonitoring) return;
 
     instance._isMonitoring = true;
-    instance._monitoringTimer = Timer.periodic(interval, (timer) {
-      instance._collectMetrics();
+    instance._monitoringTimer = Timer.periodic(interval, (timer) async {
+      await instance._collectMetrics();
     });
 
     if (kDebugMode) {
@@ -125,6 +133,11 @@ class FlutterPerfMonitor {
   /// Get current performance metrics
   static PerformanceMetrics getCurrentMetrics() {
     return instance._createPerformanceMetrics();
+  }
+
+  /// Get per-core CPU usage
+  static List<double> getPerCoreCpuUsage() {
+    return instance._perCoreCpuUsage;
   }
 
   /// Dispose of resources
@@ -171,14 +184,62 @@ class FlutterPerfMonitor {
     _maxFPS = _fpsHistory.reduce((a, b) => a > b ? a : b);
   }
 
-  void _collectMetrics() {
+  Future<void> _collectMetrics() async {
+    if (!_isMonitoring) return;
+
+    // Update native metrics first
+    await _updateNativeMetrics();
+
     final memoryData = _createMemoryData();
     final fpsData = _createFPSData();
     final performanceMetrics = _createPerformanceMetrics();
 
-    _memoryController.add(memoryData);
-    _fpsController.add(fpsData);
-    _metricsController.add(performanceMetrics);
+    if (_isMonitoring && !_memoryController.isClosed) {
+      try {
+        _memoryController.add(memoryData);
+        _fpsController.add(fpsData);
+        _metricsController.add(performanceMetrics);
+      } catch (_) {
+        // Stream is closed, ignore
+      }
+    }
+  }
+
+  Future<void> _updateNativeMetrics() async {
+    if (!_isMonitoring) return;
+
+    try {
+      // Get memory info from native
+      final memoryResult = await _channel.invokeMethod<Map<Object?, Object?>>(
+        'getMemoryInfo',
+      );
+      if (memoryResult != null) {
+        _totalMemory = memoryResult['totalMemory'] as int? ?? _totalMemory;
+        _availableMemory =
+            memoryResult['availableMemory'] as int? ?? _availableMemory;
+      }
+
+      // Get CPU info from native
+      final cpuResult = await _channel.invokeMethod<Map<Object?, Object?>>(
+        'getCpuUsage',
+      );
+      if (cpuResult != null) {
+        _currentCpuUsage =
+            (cpuResult['totalUsage'] as num?)?.toDouble() ?? _currentCpuUsage;
+        final perCoreList = cpuResult['perCoreUsage'] as List?;
+        if (perCoreList != null) {
+          _perCoreCpuUsage = perCoreList
+              .map((e) => (e as num).toDouble())
+              .toList();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting native metrics: $e');
+      }
+      // Fallback to FPS-based CPU estimation if native fails
+      _currentCpuUsage = _estimateCPUUsage();
+    }
   }
 
   FPSData _createFPSData() {
@@ -203,8 +264,9 @@ class FlutterPerfMonitor {
       peakUsage: _peakMemoryUsage,
       availableMemory: _getAvailableMemory(),
       totalMemory: _totalMemory,
-      usagePercentage:
-          _totalMemory > 0 ? (currentUsage / _totalMemory) * 100 : 0.0,
+      usagePercentage: _totalMemory > 0
+          ? (currentUsage / _totalMemory) * 100
+          : 0.0,
       timestamp: DateTime.now(),
     );
   }
@@ -222,26 +284,51 @@ class FlutterPerfMonitor {
   }
 
   int _getCurrentMemoryUsage() {
-    // This is a simplified implementation
-    // In a real implementation, you would use platform-specific APIs
-    return _estimateMemoryUsage();
+    // Use dart:io ProcessInfo to get real RSS memory usage
+    try {
+      return ProcessInfo.currentRss;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting memory info: $e');
+      }
+      return 0;
+    }
   }
 
   int _getAvailableMemory() {
-    // This is a simplified implementation
-    // In a real implementation, you would use platform-specific APIs
-    return _totalMemory - _getCurrentMemoryUsage();
-  }
-
-  int _estimateMemoryUsage() {
-    // Simplified memory estimation
-    // In production, use proper platform channels or native APIs
-    return DateTime.now().millisecondsSinceEpoch % 1000000; // Placeholder
+    // Return native available memory if available
+    return _availableMemory;
   }
 
   double _estimateCPUUsage() {
-    // Simplified CPU usage estimation
-    // In production, use proper platform channels or native APIs
-    return (_currentFPS / 60.0) * 100; // Placeholder based on FPS
+    // Return native CPU usage if available, otherwise fall back to FPS-based estimation
+    if (_currentCpuUsage > 0) {
+      return _currentCpuUsage.clamp(0.0, 100.0);
+    }
+
+    // Fallback: Calculate CPU usage based on actual frame rendering efficiency
+    // Lower FPS means higher CPU usage
+    // At 60 FPS, CPU usage is low (around 30%)
+    // At 30 FPS, CPU usage is high (around 60%)
+    // At lower FPS, CPU usage approaches 100%
+
+    // Use average FPS if current FPS is not available yet
+    final fps = _currentFPS > 0 ? _currentFPS : _averageFPS;
+    if (fps <= 0) return 0.0;
+
+    // Calculate CPU usage as percentage of target FPS (60)
+    // If FPS is 60, CPU usage is base usage (30%)
+    // If FPS drops, CPU usage increases proportionally
+    const targetFPS = 60.0;
+    const baseCPUUsage = 30.0; // Base CPU usage at 60 FPS
+
+    // Calculate how much we're struggling compared to target FPS
+    final fpsRatio = fps / targetFPS;
+
+    // CPU usage increases as FPS drops
+    // Formula: base + (1 - fpsRatio) * (100 - base)
+    final cpuUsage = baseCPUUsage + (1.0 - fpsRatio) * (100.0 - baseCPUUsage);
+
+    return cpuUsage.clamp(0.0, 100.0);
   }
 }
