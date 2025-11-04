@@ -18,6 +18,11 @@ import java.io.InputStreamReader
 class FlutterPerfMonitorPlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var channel: MethodChannel
     private lateinit var context: Context
+    
+    // CPU usage calculation state
+    private data class CpuStats(val total: Long, val idle: Long, val timestamp: Long)
+    private var previousCpuStats: List<CpuStats> = emptyList()
+    private var previousTimestamp: Long = 0
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_perf_monitor")
@@ -92,7 +97,8 @@ class FlutterPerfMonitorPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun getPerCoreCpuUsage(): List<Double> {
-        val cpuUsage = mutableListOf<Double>()
+        val currentCpuStats = mutableListOf<CpuStats>()
+        val currentTimestamp = System.currentTimeMillis()
         
         try {
             val reader = BufferedReader(FileReader("/proc/stat"))
@@ -112,12 +118,7 @@ class FlutterPerfMonitorPlugin : FlutterPlugin, MethodCallHandler {
                             val softirq = if (parts.size > 7) parts[7].toLong() else 0
                             
                             val total = user + nice + system + idle + iowait + irq + softirq
-                            val usage = if (total > 0) {
-                                ((total - idle).toDouble() / total * 100.0)
-                            } else {
-                                0.0
-                            }
-                            cpuUsage.add(usage)
+                            currentCpuStats.add(CpuStats(total, idle, currentTimestamp))
                         } catch (e: NumberFormatException) {
                             // Skip invalid CPU lines
                         }
@@ -130,6 +131,44 @@ class FlutterPerfMonitorPlugin : FlutterPlugin, MethodCallHandler {
             // /proc/stat not accessible, return empty list
             throw e
         }
+        
+        // If we don't have previous stats, initialize them and return zeros
+        if (previousCpuStats.isEmpty() || previousTimestamp == 0L) {
+            previousCpuStats = currentCpuStats
+            previousTimestamp = currentTimestamp
+            return List(currentCpuStats.size) { 0.0 }
+        }
+        
+        // Calculate CPU usage based on difference between snapshots
+        // /proc/stat values are cumulative counters (in jiffies), so we calculate
+        // the percentage based on the difference: (active_jiffies / total_jiffies) * 100
+        val cpuUsage = mutableListOf<Double>()
+        
+        // Ensure we have matching core counts
+        val minCores = minOf(previousCpuStats.size, currentCpuStats.size)
+        
+        for (i in 0 until minCores) {
+            val prev = previousCpuStats[i]
+            val curr = currentCpuStats[i]
+            
+            val totalDiff = curr.total - prev.total
+            val idleDiff = curr.idle - prev.idle
+            
+            // Calculate CPU usage percentage: (active_time / total_time) * 100
+            // where active_time = total_time - idle_time
+            val usage = if (totalDiff > 0) {
+                val activeDiff = totalDiff - idleDiff
+                (activeDiff.toDouble() / totalDiff * 100.0).coerceIn(0.0, 100.0)
+            } else {
+                0.0
+            }
+            
+            cpuUsage.add(usage)
+        }
+        
+        // Update previous stats for next calculation
+        previousCpuStats = currentCpuStats
+        previousTimestamp = currentTimestamp
         
         return cpuUsage
     }

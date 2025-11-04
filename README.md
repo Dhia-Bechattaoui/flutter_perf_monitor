@@ -7,6 +7,8 @@
 
 Real-time performance monitoring with FPS tracking and memory usage for Flutter applications.
 
+<img src="assets/example.gif" width="300" alt="Flutter Performance Monitor Example">
+
 ## Features
 
 - 🎯 **Real-time FPS tracking** - Monitor frame rates in real-time

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-11-04
+
+### Fixed
+- **Android CPU usage calculation accuracy**
+  - Fixed CPU usage calculation to use proper two-snapshot comparison method
+  - Previously used instantaneous snapshot which didn't reflect actual CPU usage over time
+  - Now correctly calculates CPU usage percentage by comparing differences between `/proc/stat` readings
+  - First call returns 0.0% (baseline initialization), subsequent calls show accurate CPU usage
+
 ## [0.1.0] - 2024-11-03
 
 ### Added
@@ -92,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **0.1.1** - Fixed Android CPU usage calculation to use proper two-snapshot comparison method
 - **0.1.0** - Added native Android/iOS implementations for real CPU and memory metrics
 - **0.0.1** - Initial release with basic project structure and performance monitoring foundation
 

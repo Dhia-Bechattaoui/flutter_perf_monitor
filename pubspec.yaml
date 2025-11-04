@@ -1,6 +1,6 @@
 name: flutter_perf_monitor
 description: Real-time performance monitoring with FPS tracking and memory usage for Flutter applications
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/Dhia-Bechattaoui/flutter_perf_monitor
 repository: https://github.com/Dhia-Bechattaoui/flutter_perf_monitor
 issue_tracker: https://github.com/Dhia-Bechattaoui/flutter_perf_monitor/issues
