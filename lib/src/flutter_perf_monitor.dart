@@ -1,8 +1,14 @@
 import 'dart:async';
-import 'dart:io';
+// Conditional import for ProcessInfo (not available on web)
+import 'dart:io' if (dart.library.html) 'flutter_perf_monitor_stub.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+
+// JavaScript interop for web memory API (only available on web)
+// Use stub on non-web platforms, dart:js on web
+import 'flutter_perf_monitor_stub.dart' if (dart.library.html) 'dart:js' as js;
 import 'models/fps_data.dart';
 import 'models/memory_data.dart';
 import 'models/performance_metrics.dart';
@@ -41,6 +47,7 @@ class FlutterPerfMonitor {
   int _availableMemory = 0;
   double _currentCpuUsage = 0.0;
   List<double> _perCoreCpuUsage = [];
+  bool _hasLoggedMemoryWarning = false;
   static const MethodChannel _channel = MethodChannel('flutter_perf_monitor');
 
   final StreamController<PerformanceMetrics> _metricsController =
@@ -76,7 +83,7 @@ class FlutterPerfMonitor {
     });
 
     if (kDebugMode) {
-      print('FlutterPerfMonitor initialized successfully');
+      debugPrint('FlutterPerfMonitor initialized successfully');
     }
   }
 
@@ -101,7 +108,7 @@ class FlutterPerfMonitor {
     });
 
     if (kDebugMode) {
-      print('Performance monitoring started');
+      debugPrint('Performance monitoring started');
     }
   }
 
@@ -116,7 +123,7 @@ class FlutterPerfMonitor {
     instance._monitoringTimer = null;
 
     if (kDebugMode) {
-      print('Performance monitoring stopped');
+      debugPrint('Performance monitoring stopped');
     }
   }
 
@@ -208,6 +215,13 @@ class FlutterPerfMonitor {
   Future<void> _updateNativeMetrics() async {
     if (!_isMonitoring) return;
 
+    // Skip native calls on web platform
+    if (kIsWeb) {
+      // On web, use FPS-based CPU estimation
+      _currentCpuUsage = _estimateCPUUsage();
+      return;
+    }
+
     try {
       // Get memory info from native
       final memoryResult = await _channel.invokeMethod<Map<Object?, Object?>>(
@@ -234,8 +248,10 @@ class FlutterPerfMonitor {
         }
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error getting native metrics: $e');
+      // Silently fallback to FPS-based CPU estimation if native fails
+      // Only log in debug mode if it's not a MissingPluginException (expected on web)
+      if (kDebugMode && !e.toString().contains('MissingPluginException')) {
+        debugPrint('Error getting native metrics: $e');
       }
       // Fallback to FPS-based CPU estimation if native fails
       _currentCpuUsage = _estimateCPUUsage();
@@ -272,6 +288,14 @@ class FlutterPerfMonitor {
   }
 
   PerformanceMetrics _createPerformanceMetrics() {
+    // On web, always recalculate CPU usage based on current FPS
+    // On native platforms, use the cached value from native if available
+    final cpuUsage = kIsWeb
+        ? _estimateCPUUsage() // Always recalculate on web
+        : (_currentCpuUsage > 0
+              ? _currentCpuUsage.clamp(0.0, 100.0)
+              : _estimateCPUUsage());
+
     return PerformanceMetrics(
       fps: _currentFPS,
       memoryUsage: _getCurrentMemoryUsage(),
@@ -279,20 +303,56 @@ class FlutterPerfMonitor {
       frameTime: _lastFrameTime != null
           ? DateTime.now().difference(_lastFrameTime!).inMicroseconds / 1000.0
           : 0.0,
-      cpuUsage: _estimateCPUUsage(),
+      cpuUsage: cpuUsage,
     );
   }
 
   int _getCurrentMemoryUsage() {
+    // On web, try to use browser's performance.memory API
+    if (kIsWeb) {
+      return _getWebMemoryUsage();
+    }
+
     // Use dart:io ProcessInfo to get real RSS memory usage
     try {
       return ProcessInfo.currentRss;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error getting memory info: $e');
-      }
+      // Silently return 0 on error (e.g., if ProcessInfo is not available)
       return 0;
     }
+  }
+
+  int _getWebMemoryUsage() {
+    if (!kIsWeb) return 0;
+
+    // Try to access performance.memory (available in Chrome/Chromium browsers)
+    try {
+      // Use JavaScript eval to access window.performance.memory.usedJSHeapSize
+      // This is the most reliable way to access non-standard JavaScript APIs
+      final result = js.context.callMethod('eval', [
+        'window.performance && window.performance.memory && window.performance.memory.usedJSHeapSize || null',
+      ]);
+
+      if (result != null) {
+        final memoryBytes = (result as num).toInt();
+        if (memoryBytes > 0) {
+          if (kDebugMode) {
+            debugPrint(
+              'Web memory: ${(memoryBytes / 1024 / 1024).toStringAsFixed(2)} MB',
+            );
+          }
+          return memoryBytes;
+        }
+      }
+    } catch (e) {
+      // performance.memory is not available (e.g., in Firefox, Safari, or disabled)
+      // This is expected and not an error - silently return 0
+      if (kDebugMode && !_hasLoggedMemoryWarning) {
+        _hasLoggedMemoryWarning = true;
+        debugPrint('Web memory API not available: $e');
+      }
+    }
+    return 0;
   }
 
   int _getAvailableMemory() {
@@ -301,8 +361,9 @@ class FlutterPerfMonitor {
   }
 
   double _estimateCPUUsage() {
-    // Return native CPU usage if available, otherwise fall back to FPS-based estimation
-    if (_currentCpuUsage > 0) {
+    // On web, always recalculate based on FPS (don't use cached value)
+    // On native platforms, use cached value if available
+    if (!kIsWeb && _currentCpuUsage > 0) {
       return _currentCpuUsage.clamp(0.0, 100.0);
     }
 

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-11-07
+
+### Added
+- **Web platform support**
+  - Full web platform compatibility with proper error handling
+  - CPU usage monitoring on web using FPS-based estimation
+  - Graceful handling of missing native platform channels on web
+  - Memory monitoring attempt on web (shows 0.0 MB due to browser security restrictions)
+
+### Fixed
+- **Web platform errors**
+  - Fixed `MissingPluginException` errors when running on web
+  - Added platform detection to skip native method channel calls on web
+  - Fixed `ProcessInfo.currentRss` errors on web by using conditional imports
+  - Updated `index.html` to use modern Flutter web initialization API
+  - Fixed deprecated `FlutterLoader.loadEntrypoint` and `serviceWorkerVersion` warnings
+  - Fixed `_flutter.buildConfig` requirement error
+  - Fixed deprecated `apple-mobile-web-app-capable` meta tag
+  - Replaced all `print` statements with `debugPrint` for better production code practices
+
+### Changed
+- **Web platform behavior**
+  - CPU usage on web now dynamically updates based on FPS (no longer stuck at first value)
+  - Memory shows 0.0 MB on web (expected limitation - browsers don't expose process memory)
+  - Improved error handling with silent fallbacks for web platform
+  - Added conditional imports for `dart:io` and `dart:js` to prevent compilation errors on different platforms
+
+### Technical Details
+- **Web Implementation**: Conditional platform detection using `kIsWeb`
+  - Uses `dart:js` for JavaScript interop to access `performance.memory` API
+  - Falls back gracefully when browser APIs are unavailable
+  - CPU estimation based on FPS performance (60 FPS = ~30% CPU, lower FPS = higher CPU)
+
 ## [0.1.1] - 2025-11-04
 
 ### Fixed
@@ -101,6 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **0.2.0** - Added web platform support with proper error handling and CPU monitoring
 - **0.1.1** - Fixed Android CPU usage calculation to use proper two-snapshot comparison method
 - **0.1.0** - Added native Android/iOS implementations for real CPU and memory metrics
 - **0.0.1** - Initial release with basic project structure and performance monitoring foundation
