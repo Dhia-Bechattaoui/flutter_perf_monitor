@@ -56,8 +56,10 @@ The platform channels are automatically registered when you include this package
 
 ### Fallback Behavior
 
-If native metrics are unavailable (e.g., on web or desktop), the package falls back to:
-- **Memory**: Process-level memory via `ProcessInfo.currentRss`
+If native metrics are unavailable, the package falls back to:
+- **Web (JS)**: Uses `window.performance.memory.usedJSHeapSize` when the browser exposes it (generally Chrome/Edge). Safari/Firefox return `null`, so memory becomes `0`.
+- **Web (WASM)**: Browsers keep wasm isolates sandboxed from JavaScript, so memory usage always reports `0`.
+- **Desktop (macOS, Windows, Linux)**: Process-level memory via `ProcessInfo.currentRss`
 - **CPU**: FPS-based estimation
 
 ## Building
