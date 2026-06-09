@@ -10,6 +10,9 @@ jobs:
   pana:
     name: Pana Score Analysis
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for authentication using OIDC
+      contents: write # Required to push auto-formatted code
     steps:
       - uses: actions/checkout@v4
       
@@ -23,6 +26,17 @@ jobs:
       - name: Install pana
         run: dart pub global activate pana
       
+      - name: Auto-format code
+        run: |
+          dart format .
+          if [[ -n $(git status --porcelain) ]]; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "style: auto-format with dart format"
+            git push origin HEAD:${GITHUB_REF#refs/heads/}
+          fi
+      
       - name: Run pana and check score
         run: |
           OUTPUT=$(dart pub global run pana --no-warning --source path . 2>&1)
@@ -34,3 +48,6 @@ jobs:
             exit 1
           fi
 
+      - name: Publish to pub.dev
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: dart pub publish --force
