@@ -5,40 +5,35 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.10+-blue.svg)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.0+-blue.svg)](https://dart.dev)
 
-Real-time performance monitoring with FPS tracking and memory usage for Flutter applications.
+A lightweight package to track real-time performance metrics in your Flutter applications, including FPS and system-level memory and CPU usage.
 
 <img src="assets/example.gif" width="300" alt="Flutter Performance Monitor Example">
 
-## Features
+## Key Features
 
-- 🎯 **Real-time FPS tracking** - Monitor frame rates in real-time
-- 💾 **Memory usage monitoring** - Track memory consumption patterns (Web JS builds can read browser heap metrics when available; WebAssembly currently reports `0`)
-- 📊 **Performance metrics** - Comprehensive performance analytics
-- 🔄 **Live updates** - Real-time performance data updates
-- 📱 **Cross-platform** - Works on iOS, Android, and Desktop. Web JS builds expose FPS and, when supported, memory. WebAssembly builds only expose FPS because the browser blocks memory access.
-- ⚡ **Lightweight** - Minimal performance impact on your app
-- 🚀 **Native implementations** - Real CPU and memory metrics on Android/iOS
+- Real-time FPS tracking.
+- Memory and CPU usage monitoring with native implementations for iOS and Android.
+- Live metric updates with minimal performance impact.
+- Cross-platform support (iOS, Android, Web, and Desktop).
 
 ## Getting Started
 
-### Installation
-
-Add this to your package's `pubspec.yaml` file:
+Add the dependency to your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_perf_monitor: ^0.1.0
+  flutter_perf_monitor: ^0.2.1
 ```
 
-### Usage
+### Basic Usage
+
+Initialize the monitor and add the widget to your widget tree:
 
 ```dart
 import 'package:flutter_perf_monitor/flutter_perf_monitor.dart';
 
 void main() {
-  // Initialize the performance monitor
   FlutterPerfMonitor.initialize();
-  
   runApp(MyApp());
 }
 
@@ -49,10 +44,7 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: Column(
           children: [
-            // Performance monitor widget
             PerfMonitorWidget(),
-            
-            // Your app content
             Expanded(
               child: YourAppContent(),
             ),
@@ -66,72 +58,41 @@ class MyApp extends StatelessWidget {
 
 ## API Reference
 
-### FlutterPerfMonitor
+The primary interface is `FlutterPerfMonitor`, which exposes the following methods:
 
-The main class for performance monitoring.
+- `initialize()`: Sets up the performance monitor.
+- `startMonitoring()` / `stopMonitoring()`: Controls the monitoring lifecycle.
+- `getFPS()`: Returns the current frame rate.
+- `getMemoryUsage()`: Returns total, available, and used memory.
+- `getPerCoreCpuUsage()`: Returns CPU usage percentages.
 
-#### Methods
+For displaying metrics, use the `PerfMonitorWidget`.
 
-- `initialize()` - Initialize the performance monitor
-- `startMonitoring()` - Start performance monitoring
-- `stopMonitoring()` - Stop performance monitoring
-- `getFPS()` - Get current FPS value
-- `getMemoryUsage()` - Get current memory usage
-- `getPerCoreCpuUsage()` - Get per-core CPU usage percentages
+## Platform Specifics
 
-### PerfMonitorWidget
+We provide native integrations for accurate hardware metrics where possible, and fallback mechanisms for others.
 
-A widget that displays performance metrics.
+### Native Support (Android & iOS)
 
-## Example
-
-See the [example](example/) directory for a complete working example.
-
-## Native Implementations
-
-This package includes native implementations for Android and iOS to provide accurate system-level metrics:
-
-### Android
-- **Total & Available Memory**: Via `ActivityManager.MemoryInfo`
-- **Per-Core CPU Usage**: Via `/proc/stat`
-- **Total CPU Usage**: Average of all cores
-
-### iOS
-- **Total & Available Memory**: Via `ProcessInfo` and `mach_task_basic_info`
-- **Per-Core CPU Usage**: Via `task_threads`
-- **Total CPU Usage**: Sum of all thread usage
+- **Android**: CPU usage is read from `/proc/stat`. Memory is fetched via `ActivityManager.MemoryInfo`.
+- **iOS**: CPU usage leverages `task_threads`. Memory is fetched via `ProcessInfo` and `mach_task_basic_info`.
 
 ### Fallback Behavior
 
-On platforms without native support, the package falls back to:
-- **Web (JS)**: Reads `window.performance.memory.usedJSHeapSize` when the browser exposes it. Chrome/Edge usually allow this without additional headers; Safari/Firefox return `null`, so the value becomes `0`.
-- **Web (WASM)**: The wasm runtime runs inside a sandbox that hides process memory even with cross-origin isolation, so memory usage is always reported as `0`.
-- **Desktop (macOS, Windows, Linux)**: Process-level memory via `ProcessInfo.currentRss`
-- **CPU**: FPS-based estimation
+When native metrics are unavailable, the package uses fallbacks:
 
-### Web runtimes
+- **Desktop**: Process memory via `ProcessInfo.currentRss`. CPU relies on FPS-based estimation.
+- **Web (JS)**: Uses `window.performance.memory.usedJSHeapSize` when the browser allows it (e.g., Chrome/Edge). Otherwise, defaults to 0.
+- **Web (WASM)**: Wasm sandbox restrictions prevent direct heap access, so memory is reported as 0. FPS tracking remains active.
 
-- **JavaScript (dart2js)**: The plugin uses `window.performance.memory.usedJSHeapSize`. Chrome/Edge expose it by default, so you can see heap growth. Safari/Firefox ignore it and return `null`, so the chart shows `0`.
-- **WebAssembly (dart2wasm)**: Browsers do not expose the Dart isolate's heap to JavaScript. Even with Cross-Origin-Opener-Policy/Cross-Origin-Embedder-Policy headers, `performance.memory` stays `null`, so memory usage is `0`. FPS tracking continues to work.
+For more details on implementation, please refer to [SETUP.md](SETUP.md).
 
-For detailed implementation information, see [SETUP.md](SETUP.md).
+## Contributing & Support
 
-## Contributing
+We welcome contributions. Please review [CONTRIBUTING.md](CONTRIBUTING.md) for our guidelines. 
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+If you encounter issues or have feedback, feel free to open an issue on our [GitHub repository](https://github.com/Dhia-Bechattaoui/flutter_perf_monitor/issues).
 
-## License
+See [CHANGELOG.md](CHANGELOG.md) for version history.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-If you encounter any problems or have suggestions, please file an issue at the [GitHub repository](https://github.com/Dhia-Bechattaoui/flutter_perf_monitor/issues).
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version history.
+License: [MIT](LICENSE)

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-09
+
+### Fixed
+- **Android Gradle Plugin compatibility**
+  - Removed explicit Kotlin Gradle Plugin (`kotlin-android`) application to support Flutter 3.24+ Built-in Kotlin and AGP 9.0+ compatibility
+- **iOS Swift Package Manager (SPM) compatibility**
+  - Added support for Swift Package Manager on iOS by generating `Package.swift` and reorganizing source files to support the latest Flutter iOS plugin structure
+
 ## [0.2.0] - 2025-11-07
 
 ### Added
@@ -134,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **0.2.1** - Added iOS Swift Package Manager compatibility and fixed Android Kotlin Gradle Plugin warnings
 - **0.2.0** - Added web platform support with proper error handling and CPU monitoring
 - **0.1.1** - Fixed Android CPU usage calculation to use proper two-snapshot comparison method
 - **0.1.0** - Added native Android/iOS implementations for real CPU and memory metrics
