@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-06-09
+
+### Fixed
+- Re-trigger pub.dev auto-publish to fix GitHub Token limitation.
+
+
 ## [0.2.2] - 2026-06-09
 
 ### Added
@@ -148,6 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **0.2.3** - Re-trigger pub.dev auto-publish
 - **0.2.2** - Added automated publishing to pub.dev on GitHub Actions
 - **0.2.1** - Added iOS Swift Package Manager compatibility and fixed Android Kotlin Gradle Plugin warnings
 - **0.2.0** - Added web platform support with proper error handling and CPU monitoring
