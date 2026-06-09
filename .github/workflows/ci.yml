@@ -48,10 +48,16 @@ jobs:
             exit 1
           fi
 
-  publish:
-    name: Publish to pub.dev
-    needs: pana
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      id-token: write # Required for authentication using OIDC
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+      - name: Create and push version tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          VERSION=$(grep '^version: ' pubspec.yaml | awk '{print $2}')
+          TAG="v$VERSION"
+          # Check if tag already exists
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
+            echo "Tag $TAG already exists on remote, skipping tag creation."
+          else
+            echo "Creating and pushing new tag: $TAG"
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
